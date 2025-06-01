@@ -11,9 +11,9 @@ namespace DAL.Entities
     {
         public string AccountId { get; set; }
         public string AccountEmail { get; set; }
-        public string AccountPassword { get; set; }
+        public string ?AccountPassword { get; set; }
         
-
+        public bool IsVerified { get; set; } = false; // Default to false, indicating the account is not verified
         public string ?AccountName { get; set; }
 
         public string ?Token { get; set; }

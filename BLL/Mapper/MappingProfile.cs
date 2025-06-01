@@ -14,6 +14,7 @@ namespace BLL.Mapper
         public MappingProfile()
         {
              CreateMap<Account, AccountRequestDTO>().ReverseMap();
+             CreateMap<Account, AccountCreateRequestDTO>().ReverseMap();
         }
        
     }

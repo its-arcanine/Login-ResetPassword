@@ -25,19 +25,81 @@ namespace BLL.Service
             _emailService = emailService;
         }
 
-        public async Task<ResponseDTO> CreateAccountAsync(AccountRequestDTO accountRequest)
+        public async Task<ResponseDTO> CreateAccountAsync(String verificationToken ,AccountCreateRequestDTO accountCreateRequest)
         {
-            var account = _mapper.Map<Account>(accountRequest);
-            account.AccountId = Guid.NewGuid().ToString(); 
-            var existingAccount =  _accountRepository.GetSingle(a => a.AccountEmail == account.AccountEmail);
+            try
+            {
+                var account = _accountRepository.GetSingle(a => a.Token == verificationToken && a.TokenExpiration > DateTime.UtcNow && !a.IsVerified);
+                if (account == null)
+                {
+                    return new ResponseDTO { Success = false, Message = "Invalid or expired verification token." };
+                }
+                account.AccountName = accountCreateRequest.AccountName;
+                account.AccountPassword = accountCreateRequest.AccountPassword;
+                account.IsVerified = true; // Mark the account as verified
+                var existingAccount = _accountRepository.GetSingle(a => a.AccountEmail == account.AccountEmail);
+                _accountRepository.Update(account);
+                return new ResponseDTO { Success = true, Message = "Account created successfully." };
+            }
+            catch
+            {
+                return new ResponseDTO { Success = false, Message = "An error occurred while creating the account." };
+            }
+            
+        }
+
+
+
+        public async Task<ResponseDTO> RequestCreateAccountAsync(string email)
+        {
+            var existingAccount = _accountRepository.GetSingle(a => a.AccountEmail == email && a.IsVerified == true);
             if (existingAccount != null)
             {
                 return new ResponseDTO { Success = false, Message = "Account with this email already exists." };
             }
-            _accountRepository.Create(account);
-            return new ResponseDTO { Success = true, Message = "Account created successfully." };
-        }
+            existingAccount = _accountRepository.GetSingle(a => a.AccountEmail == email);
+            string verificationToken = GenerateSecureToken();
+            DateTime expiryTime = DateTime.UtcNow.AddMinutes(5); // Token valid for 5 minutes
+            string accountId;
+            if (existingAccount != null && existingAccount.AccountEmail != null)
+            {
+                accountId = existingAccount.AccountId; // Use existing account ID if it exists
+            }
+            else
+                accountId = Guid.NewGuid().ToString(); // Generate a new account ID if it doesn't exist
+            var account = new Account
+            {
+                AccountId = accountId,
+                AccountEmail = email,
+                Token = verificationToken,
+                TokenExpiration = expiryTime,
+                IsVerified = false // Initially set to false until verified
+            };
+            string subject = "Account Verification Required";
+            string body = $"Hello,\n\n" +
+                          $"Please click the following link to verify your account:\n" +
+                          $"{verificationToken}\n\n" +
+                          $"This link will expire in 5 minutes. If you did not request this, please ignore this email.\n\n" +
+                          $"Regards,\nYour App Team";
+            try
+            {
+                await _emailService.SendEmailAsync(email, subject, body);
+                if (existingAccount == null)
+                {
+                    _accountRepository.Create(account);
+                }
+                else
+                    _accountRepository.Update(account); // Save the account with the token and expiration
+                return new ResponseDTO { Success = true, Message = "Verification email sent successfully." };
+            }
+            catch (Exception ex)
+            {
+                // Log the exception (e.g., using ILogger)
+                Console.WriteLine($"Error sending verification email to {email}: {ex.Message}");
+                return new ResponseDTO { Success = false, Message = "Failed to send verification email." };
+            }
 
+        }
         public async Task<ResponseDTO> LoginAccountAsync(AccountRequestDTO accountRequest)
         {
             var account = _accountRepository.GetSingle(a => a.AccountEmail == accountRequest.AccountEmail && a.AccountPassword == accountRequest.AccountPassword);

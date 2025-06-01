@@ -3,15 +3,14 @@ using BLL.Service;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity.Data;
 using Microsoft.AspNetCore.Mvc;
+using System.Security;
 
 namespace WebApplication4.Controllers
 {
-
-
-        [ApiController] // Indicates that the class is an API controller
-        [Route("api/[controller]")] // Defines the base route for this controller (e.g., /api/Account)
-        public class AccountController : ControllerBase
-        {
+    [ApiController] // Indicates that the class is an API controller
+    [Route("api/[controller]")] // Defines the base route for this controller (e.g., /api/Account)
+     public class AccountController : ControllerBase
+     {
             private readonly AccountService _accountService; // Dependency injection for AccountService
 
             /// <summary>
@@ -24,23 +23,17 @@ namespace WebApplication4.Controllers
                 _accountService = accountService ?? throw new ArgumentNullException(nameof(accountService));
             }
 
-            /// <summary>
-            /// Handles the creation of a new account.
-            /// Responds to HTTP POST requests at /api/Account/create.
-            /// </summary>
-            /// <param name="accountRequest">Account details provided in the request body.</param>
-            /// <returns>An IActionResult indicating the success or failure of the operation.</returns>
-            [HttpPost("create")] // Defines a specific route for this action (e.g., /api/Account/create)
-            public async Task<IActionResult> CreateAccount([FromBody] AccountRequestDTO accountRequest)
+            [HttpPost("SendRegisterEmail")]
+            public async Task<IActionResult> SendRegisterEmail([FromBody] string email)
             {
                 // Validate the incoming request model
-                if (!ModelState.IsValid)
+                if (string.IsNullOrWhiteSpace(email))
                 {
-                    return BadRequest(ModelState); // Return 400 Bad Request if model validation fails
+                    return BadRequest(new ResponseDTO { Success = false, Message = "Email cannot be empty." });
                 }
 
-                // Call the service to create the account
-                var response = await _accountService.CreateAccountAsync(accountRequest);
+                // Call the service to send the registration email
+                var response = await _accountService.RequestCreateAccountAsync(email);
 
                 // Check the success status from the service response
                 if (response.Success)
@@ -52,7 +45,26 @@ namespace WebApplication4.Controllers
                     return BadRequest(response); // Return 400 Bad Request with error message
                 }
             }
+            [HttpPost("VerifyRegister")]
+            public async Task<IActionResult> VerifyRegister(string verificationToken, [FromBody] AccountCreateRequestDTO accountCreateRequest)
+            {
+                if (string.IsNullOrWhiteSpace(verificationToken))
+                {
+                    return BadRequest(new ResponseDTO { Success = false, Message = "Email cannot be empty." });
+                }
+                verificationToken = verificationToken.Trim(); // Trim whitespace from the token
+                var response = await _accountService.CreateAccountAsync(verificationToken, accountCreateRequest);
+                if (response.Success)
+                {
+                    return Ok(response); // Return 200 OK with success message
+                }
+                else
+                {
+                    return BadRequest(response); // Return 400 Bad Request with error message
+                }
+            }
 
+        
             /// <summary>
             /// Handles user login.
             /// Responds to HTTP POST requests at /api/Account/login.
@@ -162,7 +174,7 @@ namespace WebApplication4.Controllers
                     return NotFound(response); // Return 404 Not Found if account is not found
                 }
             }
-        }
+      }
 
-    }     
+}     
 
