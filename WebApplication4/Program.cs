@@ -1,4 +1,4 @@
-using BLL.Mapper;
+﻿using BLL.Mapper;
 using BLL.Service;
 using DAL;
 using DAL.Entities;
@@ -22,6 +22,19 @@ var connectionString = builder.Configuration.GetConnectionString("DefaultConnect
 
 builder.Services.AddDbContext<DataDbContext>(options =>
     options.UseSqlServer(connectionString));
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowSpecificOrigins", policy =>
+    {
+        policy.WithOrigins(
+                "http://localhost:5173", // Cho môi trường phát triển
+                "https://exe-201-gameproduc-lwhy.vercel.app/" // Thay bằng domain thật của frontend sau khi deploy
+            )
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials(); // Nếu bạn dùng cookie hoặc token
+    });
+});
 
 
 var app = builder.Build();
@@ -35,6 +48,8 @@ if (app.Environment.IsDevelopment())
 
 
 app.UseHttpsRedirection();
+
+app.UseCors("AllowSpecificOrigins");
 
 app.UseAuthorization();
 
