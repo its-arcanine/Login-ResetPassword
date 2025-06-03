@@ -64,6 +64,16 @@ namespace WebApplication4.Controllers
                 }
             }
 
+          /*  public async Task<IActionResult> HandleToken(string verificationToken)
+            {
+                if (string.IsNullOrWhiteSpace(verificationToken))
+                {
+                    return BadRequest(new ResponseDTO { Success = false, Message = "Email cannot be empty." });
+                }
+                verficationToken = verficationToken.Trim(); // Trim whitespace from the token
+                
+             }*/
+
         
             /// <summary>
             /// Handles user login.

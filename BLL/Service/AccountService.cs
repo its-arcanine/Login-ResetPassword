@@ -59,6 +59,7 @@ namespace BLL.Service
             }
             existingAccount = _accountRepository.GetSingle(a => a.AccountEmail == email);
             string verificationToken = GenerateSecureToken();
+            string resetLink = $"http://localhost:5173/verify-register?verificationToken={verificationToken}";
             DateTime expiryTime = DateTime.UtcNow.AddMinutes(5); // Token valid for 5 minutes
             string accountId;
             if (existingAccount != null && existingAccount.AccountEmail != null)
@@ -78,7 +79,7 @@ namespace BLL.Service
             string subject = "Account Verification Required";
             string body = $"Hello,\n\n" +
                           $"Please click the following link to verify your account:\n" +
-                          $"{verificationToken}\n\n" +
+                          $"{resetLink}\n\n" +
                           $"This link will expire in 5 minutes. If you did not request this, please ignore this email.\n\n" +
                           $"Regards,\nYour App Team";
             try
@@ -118,6 +119,7 @@ namespace BLL.Service
                 return new ResponseDTO { Success = false, Message = "Account not found." };
             }
             string resetToken = GenerateSecureToken();
+            string resetLink = $"http://localhost:5173/reset-password?resetToken={resetToken}"; // Adjust the URL as needed
             DateTime expiryTime = DateTime.UtcNow.AddMinutes(5);
             account.Token = resetToken;
             account.TokenExpiration = expiryTime;
@@ -125,7 +127,7 @@ namespace BLL.Service
             string subject = "Password Reset Request";
             string body = $"Hello {account.AccountName ?? "User"},\n\n" +
                           $"You requested a password reset. Please click the following link to reset your password:\n" +
-                          $"{resetToken}\n\n" +
+                          $"{resetLink}\n\n" +
                           $"This link will expire in 30 minutes. If you did not request this, please ignore this email.\n\n" +
                           $"Regards,\nYour App Team";
             try
