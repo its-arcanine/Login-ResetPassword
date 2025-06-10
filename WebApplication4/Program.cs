@@ -15,6 +15,8 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 builder.Services.AddScoped<IGenericRepository<Account>, GenericRepo<Account>>();
+builder.Services.AddScoped<IGenericRepository<Product>, GenericRepo<Product>>();
+builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<EmailService>();
 // You would also need to configure your DbContext here if you're using Entity Framework 
 builder.Services.AddScoped<AccountService>();
