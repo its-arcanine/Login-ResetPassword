@@ -16,6 +16,7 @@ namespace BLL.Mapper
              CreateMap<Account, AccountRequestDTO>().ReverseMap();
              CreateMap<Account, AccountCreateRequestDTO>().ReverseMap();
              CreateMap<Product, ProductDTO>().ReverseMap();
+             CreateMap<CartItem, CartItemDTO>().ReverseMap();
         }
        
     }

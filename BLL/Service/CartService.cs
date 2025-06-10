@@ -13,28 +13,48 @@ namespace BLL.Service
     public class CartService
     {
         private readonly IGenericRepository<Cart> _cartRepository;
+        private readonly IGenericRepository<Product> _productRepository;
+        private readonly IGenericRepository<CartItem> _cartItemRepository;
         private readonly IMapper _mapper;
 
-        public CartService(IGenericRepository<Cart> cartRepository, IMapper mapper)
+        public CartService(IGenericRepository<Cart> cartRepository, IMapper mapper, IGenericRepository<Product> productRepository, IGenericRepository<CartItem> cartItemRepository)
         {
             _cartRepository = cartRepository;
             _mapper = mapper;
+            _productRepository = productRepository;
+            _cartItemRepository = cartItemRepository;
         }
 
-        public async Task<Cart> GetCartByIdAsync(string cartId)
+        public async Task<ResponseDTO> GetCartItemByCartIdAsync(string cartId)
         {
             if (string.IsNullOrEmpty(cartId))
             {
                 throw new ArgumentNullException(nameof(cartId));
             }
 
-            var cart = _cartRepository.GetSingle(c => c.CartId == cartId);
-            if (cart == null)
+            try
             {
-                return null;
-            }
+                var cartItem = _cartItemRepository.Get(c => c.CartId == cartId, c => c.Product);
+                if (cartItem == null || !cartItem.Any())
+                {
+                    return new ResponseDTO { Success = false, Message = "No items found in the cart." };
+                }
+                var cartItemDTOs = cartItem.Select(ci => new CartItemDTO
+                {
+                    CartItemId = ci.CartItemId,
+                    ProductId = ci.ProductId,
+                    Quantity = ci.Quantity,
+                    Price = ci.Price, // This is the calculated price from CartItem
+                    ProductName = ci.Product.ProductName, // Use null-conditional operator in case Product wasn't included or is null
+                    ProductImageUrl = ci.Product.ProductImageUrl
 
-            return cart;
+                }).ToList();
+                return new ResponseDTO { Success = true, Result = cartItemDTOs };
+            }
+            catch (Exception ex)
+            {
+                return new ResponseDTO { Success = false, Message = ex.Message };
+            }
         }
 
         public async Task<ResponseDTO> CreateCartAsync(string accountId)
@@ -62,7 +82,7 @@ namespace BLL.Service
             }
         }
 
-        public async Task<ResponseDTO> AddProduct(string cartId, string productId, int quantity = 1 )
+        public async Task<ResponseDTO> AddProduct(string cartId, string productId, int quantity )
         {
             if (string.IsNullOrEmpty(cartId) || string.IsNullOrEmpty(productId))
             {
@@ -71,26 +91,33 @@ namespace BLL.Service
 
             try
             {
-                var cart = _cartRepository.GetSingle(c => c.CartId == cartId);
+                var cart = _cartRepository.GetSingle(c => c.CartId == cartId, c => c.CartItems);
                 if (cart == null)
                 {
                     return new ResponseDTO { Success = false, Message = "Cart not found." };
                 }
 
                 var cartItem = cart.CartItems.FirstOrDefault(ci => ci.ProductId == productId);
+                var product = _productRepository.GetSingle(p => p.ProductId == productId);
+               
                 if (cartItem != null)
                 {
                     cartItem.Quantity += quantity;
+                    cartItem.Price = product.ProductPrice * cartItem.Quantity; // Update price based on new quantity
                 }
+                
                 else
                 {
+                   
                     cart.CartItems.Add(new CartItem
                     {
                         CartItemId = Guid.NewGuid().ToString(),
                         CartId = cartId,
                         ProductId = productId,
-                        Quantity = quantity
+                        Quantity = quantity,
+                        Price = product.ProductPrice,
                     });
+
                 }
 
                 _cartRepository.Update(cart);
@@ -102,22 +129,22 @@ namespace BLL.Service
             }
         }
 
-        public async Task<ResponseDTO> RemoveProduct(string cartId, string productId)
+        public async Task<ResponseDTO> RemoveProduct(string cartId, string cartItemid)
         {
-            if (string.IsNullOrEmpty(cartId) || string.IsNullOrEmpty(productId))
+            if (string.IsNullOrEmpty(cartId) || string.IsNullOrEmpty(cartItemid))
             {
                 throw new ArgumentNullException("Cart ID and Product ID cannot be null or empty.");
             }
 
             try
             {
-                var cart = _cartRepository.GetSingle(c => c.CartId == cartId);
+                var cart = _cartRepository.GetSingle(c => c.CartId == cartId, c => c.CartItems);
                 if (cart == null)
                 {
                     return new ResponseDTO { Success = false, Message = "Cart not found." };
                 }
 
-                var cartItem = cart.CartItems.FirstOrDefault(ci => ci.ProductId == productId);
+                var cartItem = cart.CartItems.FirstOrDefault(c => c.CartItemId == cartItemid);
                 if (cartItem != null)
                 {
                     cart.CartItems.Remove(cartItem);

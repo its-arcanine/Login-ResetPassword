@@ -16,6 +16,9 @@ builder.Services.AddSwaggerGen();
 builder.Services.AddAutoMapper(typeof(MappingProfile).Assembly);
 builder.Services.AddScoped<IGenericRepository<Account>, GenericRepo<Account>>();
 builder.Services.AddScoped<IGenericRepository<Product>, GenericRepo<Product>>();
+builder.Services.AddScoped<IGenericRepository<Cart>, GenericRepo<Cart>>();
+builder.Services.AddScoped<IGenericRepository<CartItem>, GenericRepo<CartItem>>();
+builder.Services.AddScoped<CartService>();
 builder.Services.AddScoped<ProductService>();
 builder.Services.AddScoped<EmailService>();
 // You would also need to configure your DbContext here if you're using Entity Framework 
