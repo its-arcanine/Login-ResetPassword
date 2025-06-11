@@ -33,7 +33,7 @@ builder.Services.AddCors(options =>
     {
         policy.WithOrigins(
                 "http://localhost:5173", // Cho môi trường phát triển
-                "https://exe-201-gameproduc-lwhy.vercel.app/" // Thay bằng domain thật của frontend sau khi deploy
+                "https://exe-201-gameproduct-2.vercel.app" // Thay bằng domain thật của frontend sau khi deploy
             )
             .AllowAnyHeader()
             .AllowAnyMethod()
