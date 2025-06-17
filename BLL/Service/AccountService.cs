@@ -2,10 +2,14 @@
 using BLL.DTOs;
 using DAL.Entities;
 using DAL.Reposistories;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Identity.Client;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.IdentityModel.Tokens.Jwt;
 using System.Linq;
+using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,14 +19,16 @@ namespace BLL.Service
     public class AccountService
     {
         private readonly IGenericRepository<Account> _accountRepository;
+        private readonly IConfiguration _configuration;
         private readonly IMapper _mapper;
         private readonly EmailService _emailService;
 
-        public AccountService(IGenericRepository<Account> accountRepository, IMapper mapper, EmailService emailService)
+        public AccountService(IGenericRepository<Account> accountRepository, IMapper mapper, EmailService emailService, IConfiguration configuration)
         {
             _accountRepository = accountRepository ?? throw new ArgumentNullException(nameof(accountRepository));
             _mapper = mapper ?? throw new ArgumentNullException(nameof(mapper));
             _emailService = emailService;
+            _configuration = configuration;
         }
 
         public async Task<ResponseDTO> CreateAccountAsync(String verificationToken ,AccountCreateRequestDTO accountCreateRequest)
@@ -108,7 +114,8 @@ namespace BLL.Service
             {
                 return new ResponseDTO { Success = false, Message = "Invalid email or password." };
             }
-            return new ResponseDTO { Success = true, Message = "Login successful." };
+            var token = GenerateJwtToken(account);
+            return new ResponseDTO { Success = true, Message = "Login successful." , Result = token};
         }
 
         public async Task<ResponseDTO> RequestPasswordResetAsync(string email)
@@ -201,6 +208,37 @@ namespace BLL.Service
             return new ResponseDTO { Success = true, Message = "Account updated successfully." };
         }
 
-       
+        private string GenerateJwtToken(Account account)
+        {
+            var jwtSettings = _configuration.GetSection("Jwt");
+            var key = Encoding.ASCII.GetBytes(jwtSettings["Key"] ?? throw new InvalidOperationException("JWT Key is not configured in appsettings.json"));
+
+            var claims = new List<Claim>
+        {
+           
+            new Claim(ClaimTypes.NameIdentifier, account.AccountId),
+            new Claim(ClaimTypes.Email, account.AccountEmail),
+
+            new Claim(ClaimTypes.Name, account.AccountName ?? account.AccountEmail), 
+
+        
+        };
+
+            var tokenDescriptor = new SecurityTokenDescriptor
+            {
+                Subject = new ClaimsIdentity(claims),
+                Expires = DateTime.UtcNow.AddMinutes(30), // Token valid for 30 minutes. Adjust as needed.
+                Issuer = jwtSettings["Issuer"],
+                Audience = jwtSettings["Audience"],
+                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key), SecurityAlgorithms.HmacSha256Signature)
+            };
+
+            var tokenHandler = new JwtSecurityTokenHandler();
+            var token = tokenHandler.CreateToken(tokenDescriptor);
+            return tokenHandler.WriteToken(token);
+        }
+
+
+
     }
 }

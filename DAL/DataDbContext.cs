@@ -20,6 +20,9 @@ namespace DAL
         DbSet<Cart> Carts { get; set; }
         DbSet<CartItem> CartItem { get; set; }
 
+        DbSet<Order> Orders { get; set; }
+
+        DbSet<Feedback> Feedbacks { get; set; }
         DbSet<Categories> Categories { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -31,6 +34,9 @@ namespace DAL
             modelBuilder.Entity<Cart>().HasKey(c => c.CartId);
             modelBuilder.Entity<CartItem>().HasKey(ci => ci.CartItemId);
             modelBuilder.Entity<Categories>().HasKey(c => c.CategoryId);
+            modelBuilder.Entity<Order>().HasKey(o => o.OrderId);
+            modelBuilder.Entity<Feedback>().HasKey(f => f.FeedbackId);
+
 
             modelBuilder.Entity<Cart>()
                 .HasMany(c => c.CartItems) // Cart has a collection of CartItems
