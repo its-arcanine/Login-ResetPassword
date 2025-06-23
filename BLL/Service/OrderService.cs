@@ -104,6 +104,29 @@ namespace BLL.Service
             }
         }
 
+        public async Task<ResponseDTO> SumAllOrder(DateTime startDate, DateTime endDate)
+        {
+            if (startDate ==  default || endDate == default)
+            {
+                throw new ArgumentNullException("Start date and end date cannot be empty.");
+            }
+
+            try
+            {
+                var orders = _orderRepository.Get(o => o.OrderDate >= startDate && o.OrderDate <= endDate);
+                if (orders == null || !orders.Any())
+                {
+                    return new ResponseDTO { Success = false, Message = "No orders found in the specified date range." };
+                }
+                var totalAmount = orders.Sum(o => o.TotalAmount);
+                return new ResponseDTO { Success = true, Result = totalAmount };
+            }
+            catch (Exception ex)
+            {
+                return new ResponseDTO { Success = false, Message = ex.Message };
+            }
+        }
+
 
     }
 }

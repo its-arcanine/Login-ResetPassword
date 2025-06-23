@@ -238,6 +238,15 @@ namespace BLL.Service
             return tokenHandler.WriteToken(token);
         }
 
+        public async Task<Account> GetAccountByIdAsync(string accountId)
+        {
+            if (string.IsNullOrEmpty(accountId))
+            {
+                throw new ArgumentException("Account ID cannot be null or empty.", nameof(accountId));
+            }
+
+            return _accountRepository.GetSingle(a => a.AccountId == accountId) ?? throw new KeyNotFoundException($"Account with ID {accountId} not found.");
+        }
 
 
     }

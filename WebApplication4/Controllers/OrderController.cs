@@ -112,5 +112,51 @@ namespace WebApplication4.Controllers
                 return StatusCode(500, new ResponseDTO { Success = false, Message = ex.Message }); // Return 500 Internal Server Error
             }
         }
+
+        [HttpGet("FilterDateOrder")]
+        public async Task<IActionResult> FilterDateOrder(DateTime startDate, DateTime endDate)
+        {
+            if (startDate == default || endDate == default)
+            {
+                return BadRequest(new ResponseDTO { Success = false, Message = "Start date and end date cannot be empty." });
+            }
+
+            try
+            {
+                var response = await _orderService.FilterDateOrder(startDate, endDate);
+                if (!response.Success)
+                {
+                    return NotFound(response); // Return 404 Not Found with error message
+                }
+                return Ok(response); // Return 200 OK with the list of orders in the specified date range
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ResponseDTO { Success = false, Message = ex.Message }); // Return 500 Internal Server Error
+            }
+        }
+
+        [HttpGet("SumAllOrder")]
+        public async Task<IActionResult> SumAllOrder(DateTime startDate, DateTime endDate)
+        {
+            if (startDate == default || endDate == default)
+            {
+                return BadRequest(new ResponseDTO { Success = false, Message = "Start date and end date cannot be empty." });
+            }
+
+            try
+            {
+                var response = await _orderService.SumAllOrder(startDate, endDate);
+                if (!response.Success)
+                {
+                    return NotFound(response); // Return 404 Not Found with error message
+                }
+                return Ok(response); // Return 200 OK with the total amount of orders in the specified date range
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, new ResponseDTO { Success = false, Message = ex.Message }); // Return 500 Internal Server Error
+            }
+        }
     }
 }

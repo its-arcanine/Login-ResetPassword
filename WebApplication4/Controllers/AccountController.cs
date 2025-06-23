@@ -188,6 +188,28 @@ namespace WebApplication4.Controllers
                 return NotFound(response); // Return 404 Not Found if account is not found
             }
         }
+
+        [HttpGet("GetAccountById/{accountId}")] // Defines a route with a parameter (e.g., /api/Account/GetAccountById/123)
+        public async Task<IActionResult>  GetAccountById(string accountId)
+        {
+           if (string.IsNullOrWhiteSpace(accountId))
+            {
+                return BadRequest(new ResponseDTO { Success = false, Message = "Account ID cannot be empty." });
+            }
+
+            // Call the service to get account by ID
+            var account = await _accountService.GetAccountByIdAsync(accountId);
+
+            // Check the success status from the service response
+            if (account != null)
+            {
+                return Ok(account); // Return 200 OK with the account data
+            }
+            else
+            {
+                return NotFound("Not Found account"); // Return 404 Not Found if account is not found
+            }
+        }
     }
 
 }
